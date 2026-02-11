@@ -58,6 +58,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down":
 			m.lines++
 		}
+
+	case tea.WindowSizeMsg:
+		// Handle terminal resize
+		// You can adjust panel sizes based on msg.Width and msg.Height
 	}
 	return m, nil
 }
@@ -110,7 +114,11 @@ func (m model) View() string {
 }
 
 func main() {
-	p := tea.NewProgram(model{score: 0, level: 1, lines: 0})
+	p := tea.NewProgram(
+		model{score: 0, level: 1, lines: 0},
+		tea.WithAltScreen(),       // Use alternate screen buffer (fullscreen mode)
+		tea.WithMouseCellMotion(), // Optional: enable mouse support
+	)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
