@@ -19,8 +19,9 @@ inspired by lazygit and sqlit.
 ## Tech Stack
 
 - **Language**: Go
-- **TUI Library**: TBD (gocui, bubbletea, or tview)
-- **Architecture**: Panel-based layout similar to lazygit
+- **TUI Library**: Bubbletea (with lipgloss for styling)
+- **Architecture**: Elm-inspired (model-update-view) with panel-based layout
+- **Colors**: Kanagawa theme
 
 ## Development
 
