@@ -29,9 +29,18 @@ go run gocui_demo.go      # Alternative TUI library
 
 ## Git Workflow
 
+### Branching Strategy
+
+- **Default branch**: `dev` (all development work happens here)
+- **Production branch**: `main` (only merge `dev` into `main` when ready for
+  release)
+- Always branch off `dev` for new work
+- Merge feature branches back into `dev`
+- Compare diffs against `dev` branch
+
 ### Branch Naming Convention
 
-Always create a GitHub issue for planned work, then branch off `main` with this
+Always create a GitHub issue for planned work, then branch off `dev` with this
 naming pattern:
 
 ```
@@ -43,8 +52,8 @@ gh-{issue#}-{short-description}
 - Use hyphens between words
 - Examples: `gh-1-add-panels`, `gh-5-fix-rotation`, `gh-12-score-system`
 
-This convention makes it easy to review diffs against main and track work back
-to issues.
+This convention makes it easy to review diffs against dev and track work back to
+issues.
 
 ### Commit Strategy
 
