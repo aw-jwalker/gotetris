@@ -9,6 +9,18 @@ GoTetris is a terminal-based Tetris game built with Go using the Bubbletea TUI
 framework. The project follows an **Elm Architecture** pattern
 (model-update-view) inspired by lazygit and sqlit, with a panel-based UI layout.
 
+## Understanding Project Status
+
+To get up to speed on the current state of the project, check:
+
+1. **Recent GitHub issues** - See what work is planned or in progress
+2. **`thoughts/` directory** - Contains planning documents, design decisions,
+   and context (located at `gotetris/thoughts/`)
+3. **Recent commits** - Review `git log --oneline -10` to see latest changes
+
+These sources provide context on current priorities, architectural decisions,
+and recent development activity.
+
 ## Commands
 
 ```bash
