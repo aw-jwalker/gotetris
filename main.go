@@ -64,6 +64,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "n":
+			// Cycle to next piece type
+			if m.currentPiece != nil {
+				nextType := (m.currentPiece.Type + 1) % 7
+				m.currentPiece = NewPiece(nextType, 2, 3)
+			}
+		case "p":
+			// Cycle to previous piece type
+			if m.currentPiece != nil {
+				prevType := (m.currentPiece.Type + 6) % 7 // +6 = -1 mod 7
+				m.currentPiece = NewPiece(prevType, 2, 3)
+			}
+		case "r":
+			// Rotate piece clockwise
+			if m.currentPiece != nil {
+				m.currentPiece.Rotation = (m.currentPiece.Rotation + 1) % 4
+			}
+		case "left", "h":
+			// Move piece left
+			if m.currentPiece != nil {
+				m.currentPiece.Col--
+			}
+		case "right", "l":
+			// Move piece right
+			if m.currentPiece != nil {
+				m.currentPiece.Col++
+			}
+		case "up", "k":
+			// Move piece up
+			if m.currentPiece != nil {
+				m.currentPiece.Row--
+			}
+		case "down", "j":
+			// Move piece down
+			if m.currentPiece != nil {
+				m.currentPiece.Row++
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -144,9 +181,17 @@ func (m model) View() string {
 		next,
 	)
 
-	// Controls at bottom
+	// Controls at bottom (test mode)
+	pieceName := "None"
+	rotName := "0"
+	if m.currentPiece != nil {
+		pieceNames := []string{"I", "O", "T", "S", "Z", "J", "L"}
+		pieceName = pieceNames[m.currentPiece.Type]
+		rotNames := []string{"0", "R", "2", "L"}
+		rotName = rotNames[m.currentPiece.Rotation]
+	}
 	controls := controlsStyle.Render(
-		"Arrow Keys=Move | Space=Drop | Q=Quit",
+		fmt.Sprintf("N/P=Next/Prev Piece | R=Rotate | Arrow/HJKL=Move | Q=Quit | Current: %s Rotation: %s", pieceName, rotName),
 	)
 
 	// Join vertically (no extra spacing)
