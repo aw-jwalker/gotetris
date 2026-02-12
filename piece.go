@@ -304,3 +304,166 @@ func (p *Piece) Cells() [4]Offset {
 
 	return result
 }
+
+// WallKickOffset represents a wall kick test position
+type WallKickOffset struct {
+	Row int
+	Col int
+}
+
+// wallKickData defines the 5 test positions for each rotation transition
+// Format: [fromRotation][toRotation][testIndex]
+// Tests are tried in order; first successful position is used
+
+// Wall kicks for J, L, S, T, Z pieces (standard kicks)
+var wallKicksJLSTZ = map[RotationState]map[RotationState][5]WallKickOffset{
+	Rotation0: {
+		RotationR: {
+			{Row: 0, Col: 0},   // Test 1: no offset
+			{Row: 0, Col: -1},  // Test 2: left
+			{Row: -1, Col: -1}, // Test 3: left and up
+			{Row: 2, Col: 0},   // Test 4: down 2
+			{Row: 2, Col: -1},  // Test 5: left and down 2
+		},
+		RotationL: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},  // Test 2: right
+			{Row: -1, Col: 1}, // Test 3: right and up
+			{Row: 2, Col: 0},  // Test 4: down 2
+			{Row: 2, Col: 1},  // Test 5: right and down 2
+		},
+	},
+	RotationR: {
+		Rotation0: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 1},
+			{Row: -2, Col: 0},
+			{Row: -2, Col: 1},
+		},
+		Rotation2: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 1},
+			{Row: -2, Col: 0},
+			{Row: -2, Col: 1},
+		},
+	},
+	Rotation2: {
+		RotationR: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: -1, Col: 1},
+			{Row: 2, Col: 0},
+			{Row: 2, Col: 1},
+		},
+		RotationL: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: -1},
+			{Row: -1, Col: -1},
+			{Row: 2, Col: 0},
+			{Row: 2, Col: -1},
+		},
+	},
+	RotationL: {
+		Rotation0: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: -1},
+			{Row: 1, Col: -1},
+			{Row: -2, Col: 0},
+			{Row: -2, Col: -1},
+		},
+		Rotation2: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: -1},
+			{Row: 1, Col: -1},
+			{Row: -2, Col: 0},
+			{Row: -2, Col: -1},
+		},
+	},
+}
+
+// Wall kicks for I piece (larger kicks due to 4×4 bounding box)
+var wallKicksI = map[RotationState]map[RotationState][5]WallKickOffset{
+	Rotation0: {
+		RotationR: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: -2},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: -2},
+			{Row: -2, Col: 1},
+		},
+		RotationL: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: -1},
+			{Row: 0, Col: 2},
+			{Row: -2, Col: -1},
+			{Row: 1, Col: 2},
+		},
+	},
+	RotationR: {
+		Rotation0: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 2},
+			{Row: 0, Col: -1},
+			{Row: -1, Col: 2},
+			{Row: 2, Col: -1},
+		},
+		Rotation2: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: -1},
+			{Row: 0, Col: 2},
+			{Row: -2, Col: -1},
+			{Row: 1, Col: 2},
+		},
+	},
+	Rotation2: {
+		RotationR: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 0, Col: -2},
+			{Row: 2, Col: 1},
+			{Row: -1, Col: -2},
+		},
+		RotationL: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 2},
+			{Row: 0, Col: -1},
+			{Row: -1, Col: 2},
+			{Row: 2, Col: -1},
+		},
+	},
+	RotationL: {
+		Rotation0: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 0, Col: -2},
+			{Row: 2, Col: 1},
+			{Row: -1, Col: -2},
+		},
+		Rotation2: {
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 2},
+			{Row: 0, Col: -1},
+			{Row: -1, Col: 2},
+			{Row: 2, Col: -1},
+		},
+	},
+}
+
+// GetWallKicks returns the 5 wall kick test positions for rotating
+// from the current rotation state to the target rotation state
+func (p *Piece) GetWallKicks(targetRotation RotationState) [5]WallKickOffset {
+	// O piece doesn't kick
+	if p.Type == PieceO {
+		return [5]WallKickOffset{{Row: 0, Col: 0}}
+	}
+
+	// I piece has special wall kicks
+	if p.Type == PieceI {
+		return wallKicksI[p.Rotation][targetRotation]
+	}
+
+	// J, L, S, T, Z use standard wall kicks
+	return wallKicksJLSTZ[p.Rotation][targetRotation]
+}
