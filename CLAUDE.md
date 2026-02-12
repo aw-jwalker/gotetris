@@ -95,6 +95,22 @@ Common types:
 - `test:` - Adding or updating tests (e.g., `test: add board collision tests`)
 - `perf:` - Performance improvements (e.g., `perf: optimize render loop`)
 
+## Development Tools
+
+### RPI Plugin (Research, Plan, Implement)
+
+When executing RPI plugin commands/skills, **always use the thoughts CLI**. The
+RPI workflow helps with planning, research, and implementation:
+
+- `/rpi:create_plan` - Create implementation plans
+- `/rpi:research_codebase` - Document codebase architecture
+- `/rpi:implement_plan` - Execute planned work
+- `/rpi:validate_plan` - Verify implementation against plan
+- And other RPI skills...
+
+All RPI workflows use the `thoughts/` directory for documentation and planning
+artifacts.
+
 ## Architecture
 
 ### Bubbletea (Elm Architecture)
