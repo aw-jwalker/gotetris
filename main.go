@@ -12,7 +12,10 @@ import (
 var (
 	panelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			Padding(1, 2)
+			PaddingTop(0).
+			PaddingBottom(1).
+			PaddingLeft(2).
+			PaddingRight(2)
 
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -43,6 +46,7 @@ type model struct {
 	score  int
 	level  int
 	lines  int
+	board  *Board
 }
 
 // Init is called once at startup
@@ -77,31 +81,30 @@ func (m model) View() string {
 		return "Initializing..."
 	}
 
-	// Calculate responsive dimensions
-	// Account for borders (2 per panel), padding (4 per panel), and spacing (4 total)
-	overhead := (3 * 6) + 4 // 3 panels * (2 border + 4 padding) + 4 spacing
-	availableWidth := m.width - overhead
-	if availableWidth < 60 {
-		availableWidth = 60
+	// Decide scale based on terminal size (1 or 2 only)
+	scale := 1
+	if m.width >= 60 && m.height >= 48 {
+		scale = 2
 	}
 
-	sideWidth := availableWidth / 5
-	if sideWidth < 16 {
-		sideWidth = 16
-	}
-	boardWidth := availableWidth - (2 * sideWidth)
-	if boardWidth < 20 {
-		boardWidth = 20
-	}
+	// Calculate exact board dimensions at chosen scale
+	// Base board: 10 cells wide (2 chars each) × 20 cells tall
+	boardRenderWidth := 10 * 2 * scale // 20 or 40 chars
+	boardRenderHeight := 20 * scale    // 20 or 40 lines
 
-	boardHeight := m.height - 10
-	if boardHeight < 10 {
-		boardHeight = 10
-	}
+	// Panel dimensions: board + padding + title
+	boardPanelWidth := boardRenderWidth + 4   // +4 for padding (2 on each side)
+	boardPanelHeight := boardRenderHeight + 5 // +5 for title and padding
 
-	// Stats panel with responsive width
+	// Side panel dimensions
+	sideWidth := 20
+	sideHeight := boardPanelHeight
+
+	// Stats panel
 	stats := statsStyle.Copy().
 		Width(sideWidth).
+		Height(sideHeight).
+		AlignVertical(lipgloss.Top).
 		Render(
 			titleStyle.Render("Stats") + "\n\n" +
 				fmt.Sprintf("Score: %d\n", m.score) +
@@ -109,19 +112,21 @@ func (m model) View() string {
 				fmt.Sprintf("Lines: %d", m.lines),
 		)
 
-	// Board panel with responsive dimensions
+	// Board panel sized exactly for the board
 	board := boardStyle.Copy().
-		Width(boardWidth).
-		Height(boardHeight).
+		Width(boardPanelWidth).
+		Height(boardPanelHeight).
+		AlignVertical(lipgloss.Top).
 		Render(
 			titleStyle.Render("Tetris") + "\n\n" +
-				"Game board\n" +
-				"would go here",
+				m.board.Render(scale),
 		)
 
-	// Next pieces panel with responsive width
+	// Next pieces panel
 	next := nextStyle.Copy().
 		Width(sideWidth).
+		Height(sideHeight).
+		AlignVertical(lipgloss.Top).
 		Render(
 			titleStyle.Render("Next") + "\n\n" +
 				"Next pieces\n" +
@@ -143,19 +148,44 @@ func (m model) View() string {
 		"Arrow Keys=Move | Space=Drop | Q=Quit",
 	)
 
-	// Join vertically
-	return lipgloss.JoinVertical(
+	// Join vertically (no extra spacing)
+	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		top,
-		"\n",
 		controls,
+	)
+
+	// Center horizontally, align to top
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Top,
+		content,
 	)
 }
 
 func main() {
+	board := NewBoard()
+
+	// Add some test filled cells for visual verification
+	board.SetCell(19, 0, NewFilledCell(ColorRed)) // Bottom left
+	board.SetCell(19, 1, NewFilledCell(ColorRed))
+	board.SetCell(19, 2, NewFilledCell(ColorGreen))
+	board.SetCell(18, 0, NewFilledCell(ColorBlue))
+	board.SetCell(18, 1, NewFilledCell(ColorYellow))
+	board.SetCell(17, 0, NewFilledCell(ColorPurple))
+	board.SetCell(15, 5, NewFilledCell(ColorCyan))   // Middle
+	board.SetCell(10, 9, NewFilledCell(ColorOrange)) // Top right area
+
 	// Create the program with alt screen mode (fullscreen)
 	p := tea.NewProgram(
-		model{score: 0, level: 1, lines: 0},
+		model{
+			score: 0,
+			level: 1,
+			lines: 0,
+			board: board,
+		},
 		tea.WithAltScreen(),       // Fullscreen mode
 		tea.WithMouseCellMotion(), // Mouse support
 	)

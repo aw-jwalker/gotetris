@@ -27,3 +27,8 @@ go.work
 # OS
 .DS_Store
 Thumbs.db
+thoughts/
+
+# Air (hot reload tool)
+.air.toml
+tmp/
