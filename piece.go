@@ -62,3 +62,245 @@ func (p *Piece) Color() CellColor {
 		return ColorEmpty
 	}
 }
+
+// Offset represents a (row, col) offset within a piece's bounding box
+type Offset struct {
+	Row int
+	Col int
+}
+
+// pieceShapes defines the 4 cells for each piece at each rotation state
+// Coordinates are relative to the top-left of the bounding box
+// I piece uses 4×4 box, others use 3×3 box
+var pieceShapes = map[PieceType][4][4]Offset{
+	PieceI: {
+		// State 0 (spawn): horizontal in middle of 4×4 box
+		{
+			{Row: 1, Col: 0},
+			{Row: 1, Col: 1},
+			{Row: 1, Col: 2},
+			{Row: 1, Col: 3},
+		},
+		// State R: vertical on right side
+		{
+			{Row: 0, Col: 2},
+			{Row: 1, Col: 2},
+			{Row: 2, Col: 2},
+			{Row: 3, Col: 2},
+		},
+		// State 2: horizontal in middle (row 2)
+		{
+			{Row: 2, Col: 0},
+			{Row: 2, Col: 1},
+			{Row: 2, Col: 2},
+			{Row: 2, Col: 3},
+		},
+		// State L: vertical on left side
+		{
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 1},
+			{Row: 2, Col: 1},
+			{Row: 3, Col: 1},
+		},
+	},
+
+	PieceO: {
+		// State 0 (all states same): 2×2 square in top-left of 3×3 box
+		{
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 0},
+			{Row: 1, Col: 1},
+		},
+		// States R, 2, L: identical (O piece doesn't rotate visually)
+		{
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 0},
+			{Row: 1, Col: 1},
+		},
+		{
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 0},
+			{Row: 1, Col: 1},
+		},
+		{
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 0},
+			{Row: 1, Col: 1},
+		},
+	},
+
+	PieceT: {
+		// State 0: T pointing up (flat bottom)
+		{
+			{Row: 0, Col: 1}, // Top center
+			{Row: 1, Col: 0}, // Bottom left
+			{Row: 1, Col: 1}, // Bottom center
+			{Row: 1, Col: 2}, // Bottom right
+		},
+		// State R: T pointing right
+		{
+			{Row: 0, Col: 1}, // Top
+			{Row: 1, Col: 1}, // Center
+			{Row: 1, Col: 2}, // Right
+			{Row: 2, Col: 1}, // Bottom
+		},
+		// State 2: T pointing down (flat top)
+		{
+			{Row: 1, Col: 0}, // Top left
+			{Row: 1, Col: 1}, // Top center
+			{Row: 1, Col: 2}, // Top right
+			{Row: 2, Col: 1}, // Bottom center
+		},
+		// State L: T pointing left
+		{
+			{Row: 0, Col: 1}, // Top
+			{Row: 1, Col: 0}, // Left
+			{Row: 1, Col: 1}, // Center
+			{Row: 2, Col: 1}, // Bottom
+		},
+	},
+
+	PieceS: {
+		// State 0: horizontal S (right high)
+		{
+			{Row: 0, Col: 1}, // Top right
+			{Row: 0, Col: 2}, // Top right
+			{Row: 1, Col: 0}, // Bottom left
+			{Row: 1, Col: 1}, // Bottom left
+		},
+		// State R: vertical S
+		{
+			{Row: 0, Col: 1}, // Top
+			{Row: 1, Col: 1}, // Center
+			{Row: 1, Col: 2}, // Center right
+			{Row: 2, Col: 2}, // Bottom right
+		},
+		// State 2: horizontal S (same as 0)
+		{
+			{Row: 0, Col: 1},
+			{Row: 0, Col: 2},
+			{Row: 1, Col: 0},
+			{Row: 1, Col: 1},
+		},
+		// State L: vertical S (same as R)
+		{
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 1},
+			{Row: 1, Col: 2},
+			{Row: 2, Col: 2},
+		},
+	},
+
+	PieceZ: {
+		// State 0: horizontal Z (left high)
+		{
+			{Row: 0, Col: 0}, // Top left
+			{Row: 0, Col: 1}, // Top left
+			{Row: 1, Col: 1}, // Bottom right
+			{Row: 1, Col: 2}, // Bottom right
+		},
+		// State R: vertical Z
+		{
+			{Row: 0, Col: 2}, // Top right
+			{Row: 1, Col: 1}, // Center
+			{Row: 1, Col: 2}, // Center right
+			{Row: 2, Col: 1}, // Bottom left
+		},
+		// State 2: horizontal Z (same as 0)
+		{
+			{Row: 0, Col: 0},
+			{Row: 0, Col: 1},
+			{Row: 1, Col: 1},
+			{Row: 1, Col: 2},
+		},
+		// State L: vertical Z (same as R)
+		{
+			{Row: 0, Col: 2},
+			{Row: 1, Col: 1},
+			{Row: 1, Col: 2},
+			{Row: 2, Col: 1},
+		},
+	},
+
+	PieceJ: {
+		// State 0: J with bottom-left corner
+		{
+			{Row: 0, Col: 0}, // Top left
+			{Row: 1, Col: 0}, // Bottom left
+			{Row: 1, Col: 1}, // Bottom center
+			{Row: 1, Col: 2}, // Bottom right
+		},
+		// State R: J with top-left corner
+		{
+			{Row: 0, Col: 1}, // Top
+			{Row: 0, Col: 2}, // Top right
+			{Row: 1, Col: 1}, // Center
+			{Row: 2, Col: 1}, // Bottom
+		},
+		// State 2: J with top-right corner
+		{
+			{Row: 1, Col: 0}, // Top left
+			{Row: 1, Col: 1}, // Top center
+			{Row: 1, Col: 2}, // Top right
+			{Row: 2, Col: 2}, // Bottom right
+		},
+		// State L: J with bottom-right corner
+		{
+			{Row: 0, Col: 1}, // Top
+			{Row: 1, Col: 1}, // Center
+			{Row: 2, Col: 0}, // Bottom left
+			{Row: 2, Col: 1}, // Bottom
+		},
+	},
+
+	PieceL: {
+		// State 0: L with bottom-right corner
+		{
+			{Row: 0, Col: 2}, // Top right
+			{Row: 1, Col: 0}, // Bottom left
+			{Row: 1, Col: 1}, // Bottom center
+			{Row: 1, Col: 2}, // Bottom right
+		},
+		// State R: L with top-right corner
+		{
+			{Row: 0, Col: 1}, // Top
+			{Row: 1, Col: 1}, // Center
+			{Row: 2, Col: 1}, // Bottom
+			{Row: 2, Col: 2}, // Bottom right
+		},
+		// State 2: L with top-left corner
+		{
+			{Row: 1, Col: 0}, // Top left
+			{Row: 1, Col: 1}, // Top center
+			{Row: 1, Col: 2}, // Top right
+			{Row: 2, Col: 0}, // Bottom left
+		},
+		// State L: L with bottom-left corner
+		{
+			{Row: 0, Col: 0}, // Top left
+			{Row: 0, Col: 1}, // Top
+			{Row: 1, Col: 1}, // Center
+			{Row: 2, Col: 1}, // Bottom
+		},
+	},
+}
+
+// Cells returns the absolute board coordinates of the 4 cells
+// that make up this piece in its current rotation state
+func (p *Piece) Cells() [4]Offset {
+	offsets := pieceShapes[p.Type][p.Rotation]
+	var result [4]Offset
+
+	for i, offset := range offsets {
+		result[i] = Offset{
+			Row: p.Row + offset.Row,
+			Col: p.Col + offset.Col,
+		}
+	}
+
+	return result
+}
