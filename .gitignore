@@ -11,6 +11,9 @@ gotetris
 # Output of the go coverage tool
 *.out
 
+# Test baseline
+.test-baseline.json
+
 # Dependency directories
 vendor/
 

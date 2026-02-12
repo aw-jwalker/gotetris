@@ -40,13 +40,14 @@ var (
 
 // Model holds our application state
 type model struct {
-	ready  bool
-	width  int
-	height int
-	score  int
-	level  int
-	lines  int
-	board  *Board
+	ready        bool
+	width        int
+	height       int
+	score        int
+	level        int
+	lines        int
+	board        *Board
+	currentPiece *Piece
 }
 
 // Init is called once at startup
@@ -63,6 +64,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "n":
+			// Cycle to next piece type
+			if m.currentPiece != nil {
+				nextType := (m.currentPiece.Type + 1) % 7
+				m.currentPiece = NewPiece(nextType, 2, 3)
+			}
+		case "p":
+			// Cycle to previous piece type
+			if m.currentPiece != nil {
+				prevType := (m.currentPiece.Type + 6) % 7 // +6 = -1 mod 7
+				m.currentPiece = NewPiece(prevType, 2, 3)
+			}
+		case "r":
+			// Rotate piece clockwise
+			if m.currentPiece != nil {
+				m.currentPiece.Rotation = (m.currentPiece.Rotation + 1) % 4
+			}
+		case "left", "h":
+			// Move piece left
+			if m.currentPiece != nil {
+				m.currentPiece.Col--
+			}
+		case "right", "l":
+			// Move piece right
+			if m.currentPiece != nil {
+				m.currentPiece.Col++
+			}
+		case "up", "k":
+			// Move piece up
+			if m.currentPiece != nil {
+				m.currentPiece.Row--
+			}
+		case "down", "j":
+			// Move piece down
+			if m.currentPiece != nil {
+				m.currentPiece.Row++
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -119,7 +157,7 @@ func (m model) View() string {
 		AlignVertical(lipgloss.Top).
 		Render(
 			titleStyle.Render("Tetris") + "\n\n" +
-				m.board.Render(scale),
+				renderBoardWithPiece(m.board, m.currentPiece, scale),
 		)
 
 	// Next pieces panel
@@ -143,9 +181,17 @@ func (m model) View() string {
 		next,
 	)
 
-	// Controls at bottom
+	// Controls at bottom (test mode)
+	pieceName := "None"
+	rotName := "0"
+	if m.currentPiece != nil {
+		pieceNames := []string{"I", "O", "T", "S", "Z", "J", "L"}
+		pieceName = pieceNames[m.currentPiece.Type]
+		rotNames := []string{"0", "R", "2", "L"}
+		rotName = rotNames[m.currentPiece.Rotation]
+	}
 	controls := controlsStyle.Render(
-		"Arrow Keys=Move | Space=Drop | Q=Quit",
+		fmt.Sprintf("N/P=Next/Prev Piece | R=Rotate | Arrow/HJKL=Move | Q=Quit | Current: %s Rotation: %s", pieceName, rotName),
 	)
 
 	// Join vertically (no extra spacing)
@@ -165,26 +211,49 @@ func (m model) View() string {
 	)
 }
 
+// renderBoardWithPiece renders the board with the current piece overlaid
+func renderBoardWithPiece(board *Board, piece *Piece, scale int) string {
+	if piece == nil {
+		return board.Render(scale)
+	}
+
+	// Get the cells occupied by the current piece
+	pieceCells := piece.Cells()
+	pieceColor := piece.Color()
+
+	// Create a temporary board copy to avoid mutating the original
+	tempBoard := &Board{}
+	for row := 0; row < BoardHeight; row++ {
+		for col := 0; col < BoardWidth; col++ {
+			tempBoard.Cells[row][col] = board.Cells[row][col]
+		}
+	}
+
+	// Overlay the piece cells
+	for _, cell := range pieceCells {
+		if cell.Row >= 0 && cell.Row < BoardHeight &&
+			cell.Col >= 0 && cell.Col < BoardWidth {
+			tempBoard.Cells[cell.Row][cell.Col] = NewFilledCell(pieceColor)
+		}
+	}
+
+	return tempBoard.Render(scale)
+}
+
 func main() {
 	board := NewBoard()
 
-	// Add some test filled cells for visual verification
-	board.SetCell(19, 0, NewFilledCell(ColorRed)) // Bottom left
-	board.SetCell(19, 1, NewFilledCell(ColorRed))
-	board.SetCell(19, 2, NewFilledCell(ColorGreen))
-	board.SetCell(18, 0, NewFilledCell(ColorBlue))
-	board.SetCell(18, 1, NewFilledCell(ColorYellow))
-	board.SetCell(17, 0, NewFilledCell(ColorPurple))
-	board.SetCell(15, 5, NewFilledCell(ColorCyan))   // Middle
-	board.SetCell(10, 9, NewFilledCell(ColorOrange)) // Top right area
+	// Create a test piece (T piece near top-center for visibility)
+	testPiece := NewPiece(PieceT, 2, 3)
 
 	// Create the program with alt screen mode (fullscreen)
 	p := tea.NewProgram(
 		model{
-			score: 0,
-			level: 1,
-			lines: 0,
-			board: board,
+			score:        0,
+			level:        1,
+			lines:        0,
+			board:        board,
+			currentPiece: testPiece,
 		},
 		tea.WithAltScreen(),       // Fullscreen mode
 		tea.WithMouseCellMotion(), // Mouse support
